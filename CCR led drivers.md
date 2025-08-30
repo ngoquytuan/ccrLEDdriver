@@ -402,3 +402,37 @@ Bạn có đồng ý với các khối chức năng này không? Cụ thể:
 - **OVP:** Thyristor + comparator, nguồn phụ tách biệt, tự recover.
 - **Tản nhiệt:** Chỉ tập trung vào MOSFET/diode.
 Nếu cần chỉnh sửa (ví dụ: ưu tiên IC khác TL494, hoặc thêm tính năng), hãy cho tôi biết. Nếu ổn, tôi sẽ mô tả schematic chi tiết (text-based) hoặc tính toán linh kiện cụ thể (giá trị resistor, capacitor, v.v.) cho bạn. Xác nhận nhé!
+
+---
+Chào bạn! Cảm ơn bạn đã xác nhận. Dưới đây là sơ đồ khối (block diagram) của mạch điện tử được thiết kế cho bộ nguồn LED driver, dựa trên các khối chức năng đã thống nhất: topology boost với TL494, cuộn cảm tối ưu, LED driver tích hợp cho 3 cụm LED (70VDC/200mA mỗi cụm), bảo vệ quá áp bằng thyristor với nguồn phụ tách biệt, và tản nhiệt tập trung vào MOSFET/diode. Tôi sẽ trình bày sơ đồ khối bằng cú pháp Mermaid để bạn dễ hình dung. Sơ đồ này mô tả luồng tín hiệu và các khối chính của mạch.
+
+### Sơ đồ khối (Mermaid)
+
+```mermaid
+graph TD
+    A[Input AC từ Biến áp<br>30-60VAC, 2.8-6.6A<br>(CCR)] --> B[Khối Rectifier + EMI Filter<br>Cầu diode GBJ2510<br>C = 220µF/100V, L = 100µH]
+    B --> C[Khối Boost<br>TL494 + MOSFET IRF840<br>Cuộn cảm 1.5mH ferrite<br>Diode UF5408]
+    C --> D[Khối LED Driver<br>3 cụm LED, mỗi cụm 70VDC/200mA<br>LM358 + Transistor<br>Zener 250V/cụm]
+    C --> E[Khối Bảo vệ Quá áp<br>LM393 + Thyristor BT151<br>Zener 5.1V + Pot 10kΩ<br>LED Fault]
+    C --> F[Khối Nguồn Phụ<br>Aux winding trên L boost<br>7812 → 12VDC]
+    F --> E
+    D --> G[3 Cụm LED<br>70VDC/200mA mỗi cụm<br>Tổng ~42W]
+    E --> G
+    C --> H[Tản Nhiệt<br>Heatsink cho MOSFET + Diode<br>100x50x20mm]
+```
+
+### Giải thích sơ đồ khối
+1. **Input AC từ Biến áp**: Nguồn từ biến áp thứ cấp (30-60VAC, dòng CCR 2.8-6.6A) cung cấp đầu vào cho mạch.
+2. **Khối Rectifier + EMI Filter**: Chuyển AC thành DC pulsating (~30-60VDC), lọc nhiễu EMI để giảm harmonics, giữ PF ≥0.95.
+3. **Khối Boost**: TL494 điều khiển MOSFET, cuộn cảm 1.5mH (ferrite tối ưu), tăng áp lên 70-210VDC, cung cấp cho LED driver và OVP.
+4. **Khối LED Driver**: 3 cụm LED, mỗi cụm có current regulator (LM358 + transistor), dòng 200mA ±5mA, zener 250V bảo vệ mất tải.
+5. **Khối Bảo vệ Quá áp (OVP)**: Comparator LM393 + thyristor BT151 kẹp áp <300VDC khi mất tải, tự recover nhờ hysteresis, báo fault qua LED đỏ.
+6. **Khối Nguồn Phụ**: Lấy từ winding phụ trên cuộn cảm boost, cung cấp 12VDC cho OVP và LED fault, không bị khóa khi thyristor short.
+7. **Tản Nhiệt**: Heatsink tập trung cho MOSFET và diode boost, đảm bảo hoạt động 0-60°C.
+
+### Ghi chú
+- Sơ đồ khối này là tổng quan nguyên lý, chưa bao gồm chi tiết sơ đồ mạch (schematic). Nếu bạn muốn, tôi có thể mô tả schematic chi tiết bằng text (các kết nối cụ thể của TL494, LM358, thyristor, v.v.) hoặc tính toán giá trị linh kiện (resistor, capacitor, v.v.).
+- Tổng công suất ~42W (3 cụm x 14W), hiệu suất ≥90%, tản nhiệt thụ động phù hợp ứng dụng sân bay (đèn taxiway hoặc tương tự).
+
+Bạn thấy sơ đồ khối này ổn chưa? Nếu cần chỉnh sửa hoặc muốn tôi đi sâu vào schematic chi tiết, hãy cho tôi biết nhé!
+---
