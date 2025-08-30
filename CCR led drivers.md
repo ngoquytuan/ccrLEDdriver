@@ -410,7 +410,7 @@ Chào bạn! Cảm ơn bạn đã xác nhận. Dưới đây là sơ đồ khố
 
 ```mermaid
 graph TD
-    A[Input AC từ Biến áp<br>30-60VAC, 2.8-6.6A<br>(CCR)] --> B[Khối Rectifier + EMI Filter<br>Cầu diode GBJ2510<br>C = 220µF/100V, L = 100µH]
+    A[Input AC từ Biến áp<br>30-60VAC, 2.8-6.6A<br>CCR] --> B[Khối Rectifier + EMI Filter<br>Cầu diode GBJ2510<br>C = 220µF/100V, L = 100µH]
     B --> C[Khối Boost<br>TL494 + MOSFET IRF840<br>Cuộn cảm 1.5mH ferrite<br>Diode UF5408]
     C --> D[Khối LED Driver<br>3 cụm LED, mỗi cụm 70VDC/200mA<br>LM358 + Transistor<br>Zener 250V/cụm]
     C --> E[Khối Bảo vệ Quá áp<br>LM393 + Thyristor BT151<br>Zener 5.1V + Pot 10kΩ<br>LED Fault]
@@ -436,3 +436,4 @@ graph TD
 
 Bạn thấy sơ đồ khối này ổn chưa? Nếu cần chỉnh sửa hoặc muốn tôi đi sâu vào schematic chi tiết, hãy cho tôi biết nhé!
 ---
+
