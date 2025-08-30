@@ -1,3 +1,214 @@
+Chào bạn! Dựa trên sơ đồ khối đã thống nhất và các phân tích trước, tôi sẽ mô tả chi tiết **schematic text-based** cho mạch điện tử của bộ nguồn LED driver, sử dụng topology boost với TL494, hỗ trợ 3 cụm LED (70VDC/200mA, tổng ~42W), tối ưu cuộn cảm, tích hợp load dump protection, và bảo vệ quá áp (OVP) bằng thyristor với latch reset thủ công. Mạch được thiết kế để tiêu thụ dòng 2.8-6.6A từ nguồn CCR, chịu được điện áp dâng cao (>500VAC) khi mất tải, và đạt hiệu suất ≥90%, PF ≥0.95.
+
+Tôi sẽ trình bày schematic dưới dạng mô tả text, liệt kê các kết nối chính của từng khối (Rectifier, Boost, LED Driver, Load Dump, OVP, Nguồn Phụ, Tản Nhiệt). Mỗi khối sẽ có danh sách linh kiện và cách kết nối cụ thể, đảm bảo bạn có thể hình dung để vẽ lại trên Altium Designer hoặc công cụ khác. Nếu cần, tôi có thể bổ sung file Gerber hoặc tính toán giá trị linh kiện chính xác hơn sau.
+
+<xaiArtifact artifact_id="fc386dc5-2000-4902-9a35-6cd59c091d9a" artifact_version_id="1ddaa90d-09b0-4580-a08a-6aaff2c06343" title="LED_Driver_Schematic.txt" contentType="text/plain">
+
+# Schematic Text Description for LED Driver Circuit
+
+## Overview
+- Topology: Boost with TL494 for constant current LED driver
+- Input: AC 30-60VAC (up to >500VAC if low-load), 2.8-6.6A from CCR
+- Output: 3 LED strings, each 70VDC/200mA ±5mA (~14W), total ~42W
+- Features: Load dump protection, OVP with thyristor and manual reset, auxiliary power, passive cooling
+- Efficiency: ≥90%, PF ≥0.95
+- Operating Temp: 0-60°C
+
+## 1. Rectifier + EMI Filter
+**Components:**
+- D1: Bridge rectifier GBJ3510 (1000V/35A)
+- C1: 220µF/200V electrolytic capacitor
+- C2: 0.1µF/250V ceramic capacitor
+- L1: 100µH/10A EMI choke
+- MOV1: Metal Oxide Varistor, 150V clamp
+
+**Connections:**
+- Input AC (30-60VAC from transformer secondary) → D1 pins AC1, AC2
+- D1 (+) → L1 → C1 (+) → V_rect (rectified DC, ~10-30VDC nominal)
+- D1 (-) → C1 (-) → GND
+- C2 parallel with D1 AC inputs
+- MOV1 parallel with D1 AC inputs
+
+## 2. Under-Voltage Lockout (UVLO)
+**Components:**
+- U1: LM393 dual comparator (pinout: 1=OUT1, 2=IN1-, 3=IN1+, 4=GND, 5=IN2+, 6=IN2-, 7=OUT2, 8=VCC)
+- R1: 10kΩ resistor
+- R2: 2kΩ resistor
+- ZD1: 10V/0.5W Zener diode
+- R3: 1kΩ resistor
+- C3: 0.1µF/50V ceramic capacitor
+
+**Connections:**
+- V_rect → R1 → ZD1 cathode (reference ~10V)
+- ZD1 anode → GND
+- R1-ZD1 junction → U1 pin 3 (IN1+)
+- V_rect → R2 → U1 pin 2 (IN1-) → R3 → GND (divider, sense V_rect)
+- U1 pin 8 (VCC) → V_aux (12V from aux power)
+- U1 pin 4 (GND) → GND
+- U1 pin 1 (OUT1) → TL494 pin 4 (deadtime control, high = shutdown)
+- C3 parallel with R3 for noise filtering
+
+## 3. Boost Stage
+**Components:**
+- U2: TL494 PWM controller (pinout: 1=COMP, 2=FB, 3=CS, 4=DT, 5=CT, 6=RT, 7=GND, 8=C1, 9=E1, 10=E2, 11=C2, 12=VCC, 13=OUT1, 14=REF, 15=IN1+, 16=IN1-)
+- Q1: IRF840 MOSFET (600V/8A)
+- U3: IR2110 gate driver (pinout: 1=LO, 3=HO, 5=VS, 6=VB, 7=VCC, 10=IN, 11=SD, 12=GND)
+- L2: 150µH/8A ferrite toroidal inductor (Isat ≥8A, Litz wire)
+- D2: UF5408 ultrafast diode (600V/3A)
+- C4: 100µF/250V electrolytic capacitor
+- R4: 0.01Ω/2W shunt resistor (for I_CCR sense)
+- R5, R6: 100kΩ, 5kΩ resistors (Vout divider)
+- R7: 10kΩ potentiometer (current adjust ±20%)
+- C5: 0.01µF/50V ceramic capacitor (TL494 timing)
+- R8: 10kΩ resistor (TL494 timing)
+- OP1: PC817 optocoupler (for Vout feedback)
+
+**Connections:**
+- V_rect → L2 → Q1 drain
+- Q1 source → R4 → GND (sense I_CCR)
+- Q1 gate → U3 pin 1 (LO)
+- U3 pin 3 (HO) → not used (single MOSFET)
+- U3 pin 5 (VS) → Q1 source
+- U3 pin 6 (VB) → bootstrap cap (0.1µF) + diode to V_aux
+- U3 pin 7 (VCC) → V_aux (12V)
+- U3 pin 10 (IN) → U2 pin 13 (OUT1)
+- U3 pin 12 (GND) → GND
+- L2-Q1 junction → D2 anode → D2 cathode → C4 (+) → V_boost (70-210VDC)
+- C4 (-) → GND
+- V_boost → R5 → R6 → GND (divider, sense V_boost)
+- R5-R6 junction → OP1 phototransistor collector
+- OP1 phototransistor emitter → U2 pin 2 (FB)
+- U2 pin 1 (COMP) → R7 wiper (adjust 160-240mA)
+- U2 pin 3 (CS) → R4 (I_CCR sense)
+- U2 pin 5 (CT) → C5 → GND
+- U2 pin 6 (RT) → R8 → GND
+- U2 pin 7 (GND) → GND
+- U2 pin 12 (VCC), 14 (REF) → V_aux
+- OP1 LED anode → V_boost via 10kΩ resistor
+- OP1 LED cathode → GND via Zener 5.1V
+
+## 4. LED Driver (3 Strings)
+**Components (per string, repeat 3x):**
+- U4A, U4B, U4C: LM358 op-amp (one per string)
+- Q2: 2N3904 NPN transistor
+- R9: 0.5Ω/1W shunt resistor (sense 200mA)
+- R10: 10kΩ resistor
+- R11: 1kΩ resistor
+- ZD2: 100V/5W Zener diode (clamp open circuit)
+- LED1: LED string (70VDC/200mA, ~14W)
+
+**Connections (for one string, repeat for LED2, LED3):**
+- V_boost → LED1 anode
+- LED1 cathode → Q2 collector
+- Q2 emitter → R9 → GND (sense I_LED = 0.1V at 200mA)
+- R9-Q2 junction → U4A pin 2 (IN-)
+- U4A pin 3 (IN+) → R7 wiper (shared from TL494, set 0.1V ref for 200mA)
+- U4A pin 1 (OUT) → R10 → Q2 base
+- U4A pin 8 (VCC) → V_aux
+- U4A pin 4 (GND) → GND
+- ZD2 parallel with LED1 (anode to GND, cathode to V_boost)
+- R11 from Q2 base to GND (bias stability)
+
+## 5. Load Dump Protection
+**Components:**
+- U5: LM393 comparator
+- Q3: IRF540 MOSFET (100V/33A)
+- R12: 50Ω/50W resistor (dummy load, with heatsink)
+- R13: 0.01Ω/2W shunt resistor (sense I_CCR)
+- R14, R15: 10kΩ, 2kΩ resistors (V_rect divider)
+- ZD3: 100V/1W Zener diode (clamp V_rect)
+- C6: 0.1µF/50V ceramic capacitor
+
+**Connections:**
+- V_rect → R13 → GND (sense I_CCR, V_sense = 0.028-0.066V)
+- R13 → U5 pin 3 (IN+)
+- U5 pin 2 (IN-) → 0.028V ref (from Zener 5.1V + divider)
+- V_rect → R14 → R15 → GND (sense V_rect)
+- R14-R15 junction → ZD3 cathode (clamp at 100V)
+- U5 pin 1 (OUT) → Q3 gate
+- Q3 drain → R12 → V_rect
+- Q3 source → GND
+- U5 pin 8 (VCC) → V_aux
+- U5 pin 4 (GND) → GND
+- C6 parallel with R15 for noise filtering
+
+## 6. Over-Voltage Protection (OVP)
+**Components:**
+- U6: LM393 comparator
+- U7: CD4013 D-type flip-flop (for latch)
+- SCR1: BT151 thyristor (600V/12A)
+- R16, R17: 100kΩ, 3kΩ resistors (V_boost divider)
+- ZD4: 5.1V/0.5W Zener diode
+- R18: 10kΩ potentiometer (adjust 300V ±5%)
+- R19: 1kΩ resistor
+- D3: 1N4148 diode
+- LED2: Red LED (fault indicator)
+- R20: 1kΩ resistor
+- SW1: Pushbutton (manual reset)
+
+**Connections:**
+- V_boost → R16 → R17 → GND (divider, sense V_boost ~300V)
+- R16-R17 junction → U6 pin 2 (IN-)
+- ZD4 cathode → U6 pin 3 (IN+) via R18 wiper (set 5.1V ref for 300V)
+- ZD4 anode → GND
+- U6 pin 1 (OUT) → U7 pin 3 (D input)
+- U7 pin 1 (Q) → SCR1 gate via R19
+- SCR1 anode → V_boost
+- SCR1 cathode → GND
+- U7 pin 14 (VCC) → V_aux
+- U7 pin 7 (GND) → GND
+- U7 pin 5 (CLK) → U6 pin 1 via D3
+- U7 pin 2 (RESET) → SW1 → GND (manual reset)
+- LED2 anode → V_aux via R20
+- LED2 cathode → U7 pin 1 (Q)
+- C6 parallel with R17 for noise filtering
+
+## 7. Auxiliary Power
+**Components:**
+- L2_aux: Auxiliary winding on L2 (10 turns, 12VAC)
+- D4: 1N4007 diode
+- C7: 100µF/25V electrolytic capacitor
+- U8: LM7812 regulator (12VDC output)
+
+**Connections:**
+- L2_aux → D4 anode → D4 cathode → C7 (+) → U8 pin 1 (IN)
+- U8 pin 2 (GND) → GND
+- U8 pin 3 (OUT) → V_aux (12VDC)
+- C7 (-) → GND
+
+## 8. Thermal Management
+**Components:**
+- HS1: Heatsink 150x50x20mm (R_th <5°C/W)
+- Thermal pad: 3M 8810, 0.5mm
+
+**Connections:**
+- Q1 (MOSFET), D2 (diode), R12 (dummy load) mounted on HS1
+- Thermal pad between components and HS1
+
+## Notes
+- All resistors 0.25W unless specified
+- Capacitors rated for 1.5x voltage margin
+- PCB layout: Separate high-voltage (V_boost) and low-voltage (V_aux) grounds, connect at single point
+- Test points: V_rect, V_boost, I_CCR (R4), I_LED (R9)
+- Manual reset (SW1) accessible on enclosure for field operation
+- Altium Designer files to include schematic, PCB layout, Gerber, BOM
+- Efficiency calculation: P_loss ≈ 5W (MOSFET ~2W, diode ~1W, L2 ~0.5W, others ~1.5W), η ≈ 90% at 42W
+- Safety: MOV1, ZD3 protect input; ZD2, SCR1 protect output; latch ensures manual reset
+
+</xaiArtifact>
+
+### Giải Thích Tóm Tắt
+- **Rectifier + EMI Filter:** Chuyển AC (30-60VAC) thành DC (~10-30VDC), MOV clamp 150V để bảo vệ quá áp input.
+- **UVLO:** Tắt TL494 nếu V_rect <10VDC, tránh hoạt động không ổn định.
+- **Boost Stage:** TL494 + IR2110 điều khiển MOSFET, cuộn cảm 150µH chịu I_CCR 6.6A, feedback từ I_CCR và V_boost để điều chỉnh duty cycle, giữ Pout ≤50W.
+- **LED Driver:** 3 cụm LED với LM358 + transistor, dòng 200mA, zener 100V clamp mỗi cụm khi mất tải.
+- **Load Dump:** Dummy load 50Ω bật khi I_CCR <2.8A hoặc V_rect >100V, đảm bảo tiêu thụ dòng.
+- **OVP:** Thyristor short V_boost nếu >300VDC, latch bằng CD4013, reset thủ công, LED báo lỗi.
+- **Nguồn Phụ:** V_aux (12VDC) từ winding phụ, không bị ảnh hưởng khi short.
+- **Tản Nhiệt:** Heatsink cho MOSFET, diode, dummy load, phù hợp công suất thấp (~42W).
+
+Bạn thấy schematic text này thế nào? Nếu cần chỉnh sửa (ví dụ: thêm linh kiện cụ thể, thay đổi giá trị, hoặc mô tả chi tiết hơn một khối), hoặc muốn tôi chuyển sang dạng khác (như hình ảnh sơ đồ nếu cần), hãy cho tôi biết nhé!
+---
 Chào bạn! Cảm ơn bạn đã làm rõ thêm về đặc tính nguồn dòng CCR và cơ chế hoạt động của thiết kế gốc, đặc biệt về mối quan hệ ngược giữa duty cycle và công suất ra, cũng như vai trò của cuộn cảm trong chu kỳ off của MOSFET. Tôi hiểu rằng với nguồn dòng (2.8-6.6A từ CCR), khi duty cycle tăng (đặc biệt gần 100%, tức short input), công suất tiêu thụ giảm xuống (U → 0, P = U*I → 0), tương tự như cơ chế bảo vệ relay chập input trong thiết kế cũ. Điều này rất đặc thù cho hệ thống sân bay, nơi CCR duy trì dòng cố định, và cuộn cảm trong boost stage chỉ tích lũy năng lượng trong chu kỳ off của MOSFET (khi dòng chạy qua cuộn cảm và diode để cấp cho tải).
 
 Dựa trên thông tin này, tôi sẽ phân tích lại và điều chỉnh thiết kế nguyên lý để tối ưu hơn, tập trung vào:
@@ -513,5 +724,6 @@ graph TD
 
 Bạn thấy sơ đồ khối này ổn chưa? Nếu cần chỉnh sửa hoặc muốn tôi đi sâu vào schematic chi tiết, hãy cho tôi biết nhé!
 ---
+
 
 
