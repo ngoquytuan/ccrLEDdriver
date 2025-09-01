@@ -770,48 +770,6 @@ System: Vout > Vin), mạch boost không hoạt động. Với Vin_min ≈ 10VDC
   - Dummy load cần hoạt động lâu hơn nếu LED hỏng, yêu cầu heatsink tốt hơn (200x50x20mm nếu P = 392W kéo dài).
 - **Kết luận:** Thiết kế 70VDC/700mA khả thi, hiệu quả hơn, đơn giản hơn, nhưng cần điều chỉnh R_shunt (0.15Ω) và kiểm tra tản nhiệt dummy load.
 
-### Sơ Đồ LTspice (.asc) Cho Khối Nguồn Phụ Bootstrap (70VDC)
-Để hỗ trợ bạn thực hành trong LTspice, tôi cập nhật sơ đồ khối nguồn phụ bootstrap cho Vout max = 70VDC:
-
-```
-Version 4
-SHEET 1 880 680
-WIRE 112 160 64 160
-WIRE 208 160 176 160
-WIRE 208 208 208 160
-WIRE 208 304 208 288
-WIRE 256 160 208 160
-WIRE 256 304 256 160
-WIRE 64 304 64 160
-WIRE 64 304 208 304
-FLAG 64 304 0
-FLAG 208 304 0
-SYMBOL voltage 64 144 R0
-WINDOW 123 0 0 Left 2
-WINDOW 39 0 0 Left 2
-SYMATTR InstName Vout
-SYMATTR Value PWL(0 10 1m 70)
-SYMBOL diode 176 176 R270
-WINDOW 0 32 32 VTop 2
-WINDOW 3 0 32 VBottom 2
-SYMATTR InstName Dboot
-SYMATTR Value UF4007
-SYMBOL res 192 192 R0
-SYMATTR InstName R1
-SYMATTR Value 20k
-SYMBOL zener 224 288 R180
-WINDOW 0 24 64 Left 2
-WINDOW 3 24 0 Left 2
-SYMATTR InstName Dz
-SYMATTR Value BZX84C12
-SYMBOL cap 240 160 R0
-SYMATTR InstName C_vcc
-SYMATTR Value 100u
-TEXT 48 368 Left 2 !.tran 2m
-TEXT 48 384 Left 2 ; Bootstrap supply for TL494 Vcc (pin 12)
-TEXT 48 400 Left 2 ; Vout ramps from 10V to 70V for single LED string (70VDC/700mA)
-TEXT 48 416 Left 2 ; UF4007 charges C_vcc at startup, then R1+Zener regulate
-```
 
 ### Sơ Đồ Khối Cập Nhật (Mermaid) – 70VDC/700mA
 Sơ đồ khối được điều chỉnh cho 1 cụm LED 70VDC/700mA, với tụ đầu vào 100µF và OVP 100VDC:
@@ -833,19 +791,13 @@ graph TD
     C --> H[Tản Nhiệt<br>Heatsink cho MOSFET, Diode, Dummy Load<br>200x50x20mm]
 ```
 
-### Hướng Dẫn Thực Hành Trong LTspice
-1. **Mở file .asc:** Copy mã trên, lưu thành `bootstrap_70V.asc`, mở trong LTspice.
-2. **Mô phỏng:** Chạy `.tran 2m`, probe Vcc (node C_vcc/Dz). Vcc đạt 7V trong <0.1ms, ổn định ~12V tại Vout = 70V.
-3. **Thử tụ điện (C_bootstrap):** Thay Dboot bằng `Cboot = 1u` (500V), chạy lại, đo ripple Vcc (~1V do PWM) và spike khi short Vout (mô phỏng OVP).
-4. **Toàn mạch:** Nếu muốn, tôi sẽ tạo .asc đầy đủ (boost, LED driver 700mA, OVP), với R_shunt = 0.15Ω và cuộn cảm 100µH.
 
 ### Câu Hỏi Để Xác Nhận
 - Bạn có đồng ý với Vout 70VDC/700mA, tụ đầu vào 100µF, và các điều chỉnh trên không?
-- Bạn muốn .asc cho toàn mạch boost (TL494, LED driver, OVP) để mô phỏng không?
-- Bạn có muốn thử KiCad/EasyEDA để vẽ sơ đồ trực quan hơn, hay tiếp tục tối ưu LTspice?
 - Cần thêm hướng dẫn thực hành mạch thật (linh kiện, đo đạc) không?
 
 Hãy cho tôi biết để tôi hỗ trợ tiếp, đặc biệt là với LTspice hoặc công cụ khác nhé!
+
 
 
 
