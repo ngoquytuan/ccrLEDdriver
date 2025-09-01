@@ -25,7 +25,7 @@ Dự án này nhằm mục đích nâng cấp bộ nguồn cho đèn LED sân ba
 graph TD
     subgraph "Mạch LED Driver Hoàn Chỉnh"
         A[Nguồn Dòng CCR] --> B(Cầu Chỉnh Lưu);
-        B --> C{Mạch Boost (L, Q1, D1)};
+        B --> C{Mạch Boost L, Q1, D1};
         C --> D[Tụ Lọc & Tải LED];
 
         subgraph "Khối Điều Khiển & Phản Hồi"
@@ -37,7 +37,7 @@ graph TD
         end
 
         subgraph "Khối Bảo Vệ Độc Lập"
-            D -- Giám sát áp cao --> M{Mạch Crowbar (Thyristor)};
+            D -- Giám sát áp cao --> M{Mạch Crowbar Thyristor};
             M -- Chập mạch --> B;
         end
     end
